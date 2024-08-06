@@ -2,6 +2,7 @@
 2. Download YASM: http://yasm.tortall.net/Download.html
    * Win64 .exe (for general use on 64-bit Windows)
    Rename to yasm.exe and put it somewhere in the PATH.
-3. Open VirtualDub.sln.
-4. Build Win32 variant FIRST.
+3. Install DirectX Runtime (Required for Asuka to run)
+   https://www.microsoft.com/en-us/download/details.aspx?id=8109
+4. Open VirtualDub2.sln.
 5. Build x64 variant.
