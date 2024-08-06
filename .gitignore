@@ -17,3 +17,10 @@ ipch
 *.db
 *.opendb
 /revision.h
+*.exe
+*.pdb
+*.lib
+*.map
+*.idb
+*.dll
+*.vdi
