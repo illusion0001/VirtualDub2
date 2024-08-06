@@ -1,0 +1,76 @@
+name: VirutalDub2
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      BUILD_CONFIGURATION_R: Release
+      BUILD_CONFIGURATION_D: Debug
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@main
+        with:
+          fetch-depth: 0
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@main
+      - name: Install dependencies
+        run: choco install yasm
+      - name: Install DirectX Runtime
+        run: |
+          curl -fLJO https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe
+          7z x directx_Jun2010_redist.exe -o"a"
+          # The installer is sus so lets manually extract it
+          $x86Path = "C:\Windows\SysWOW64"
+          $x64Path = "C:\Windows\System32"
+          $cabFiles = Get-ChildItem -Path ${{ github.workspace }}\a -Filter *.cab
+          foreach ($cabFile in $cabFiles)
+          {
+              if ($cabFile -match "x86")
+              {
+                  $destinationPath = "$x86Path\"
+              }
+              elseif ($cabFile -match "x64")
+              {
+                  $destinationPath = "$x64Path\"
+              }
+              else
+              {
+                  echo "Skipping file: $($cabFile)"
+                  continue
+              }
+              echo "Extracting $($cabFile) to $destinationPath"
+              7z x "$cabFile" -o"$destinationPath" -aos
+              echo "Extracted $($cabFile) to $destinationPath"
+          }
+      - name: Build Win32
+        if: false
+        run: |
+          $Win32Projects = @(
+              "Ami"
+              "Asuka"
+              "Lina"
+          )
+          foreach ($Project in $Win32Projects)
+          {
+              echo "==== Build: $Project ===="
+              msbuild /m /p:Configuration=${{ env.BUILD_CONFIGURATION_D }} /p:Platform=Win32 src\$Project\$Project.vcxproj
+              msbuild /m /p:Configuration=${{ env.BUILD_CONFIGURATION_R }} /p:Platform=Win32 src\$Project\$Project.vcxproj
+          }
+      - name: Build Debug x64
+        run: msbuild /m /p:Configuration=${{ env.BUILD_CONFIGURATION_D }} /p:Platform=x64 VirtualDub2.sln
+      - name: Build Release x64
+        run: msbuild /m /p:Configuration=${{ env.BUILD_CONFIGURATION_R }} /p:Platform=x64 VirtualDub2.sln
+
