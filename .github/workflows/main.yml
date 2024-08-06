@@ -1,0 +1,88 @@
+name: VirtualDub2
+
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+  pull_request:
+    paths-ignore:
+      - '**/*.md'
+      - '**/*.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        configuration: [Release, Debug]
+        platform: [x64]
+    steps:
+      - name: Checkout main repository
+        uses: actions/checkout@main
+      - name: Checkout avlib repository
+        uses: actions/checkout@main
+        with:
+          repository: illusion0001/avlib_vdplugin
+          path: avlib_vdplugin
+          ref: debug-path-fix
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@main
+      - name: Install dependencies
+        run: choco install yasm
+      - name: Install DirectX Runtime
+        run: |
+          curl -fLJO https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe
+          7z x directx_Jun2010_redist.exe -o"a"
+          # The installer is sus so lets manually extract it
+          $x86Path = "C:\Windows\SysWOW64"
+          $x64Path = "C:\Windows\System32"
+          $cabFiles = Get-ChildItem -Path ${{ github.workspace }}\a -Filter *.cab
+          foreach ($cabFile in $cabFiles)
+          {
+              if ($cabFile -match "x86")
+              {
+                  $destinationPath = "$x86Path\"
+              }
+              elseif ($cabFile -match "x64")
+              {
+                  $destinationPath = "$x64Path\"
+              }
+              else
+              {
+                  echo "Skipping file: $($cabFile)"
+                  continue
+              }
+              7z x "$cabFile" -o"$destinationPath" -aos >> cab.txt
+              echo "Extracted $($cabFile) to $destinationPath"
+          }
+      - name: Build VirtualDub2 ${{ matrix.configuration }}/${{ matrix.platform }}
+        run: msbuild /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} VirtualDub2.sln
+      - name: Build avlib_vdplugin ${{ matrix.configuration }}/${{ matrix.platform }}
+        working-directory: avlib_vdplugin
+        run: |
+          $vd2out = "${{ github.workspace }}/out/${{ matrix.configuration }}AMD64"
+          $plugindir = "$vd2out/plugins64"
+          $ffmver = "7.0.1"
+          msbuild /m /p:Configuration=${{ matrix.configuration }} /p:Platform=${{ matrix.platform }} avlib.sln
+          mkdir $plugindir
+          Copy-Item _bin\avlib_x64\avlib-1.vdplugin $plugindir\avlib-1.vdplugin
+          Copy-Item _bin\avlib_x64\avlib-1.pdb $plugindir\avlib-1.pdb
+          curl -fLJO https://github.com/GyanD/codexffmpeg/releases/download/$ffmver/ffmpeg-$ffmver-full_build-shared.7z
+          7z x ffmpeg-$ffmver-full_build-shared.7z ffmpeg-$ffmver-full_build-shared/bin/*.dll
+          Copy-Item ffmpeg-$ffmver-full_build-shared/bin/*.dll $vd2out
+          ls -R $vd2out
+      - name: Upload artifact (PDB)
+        uses: actions/upload-artifact@main
+        with:
+          name: VirtualDub2-${{ matrix.configuration }}AMD64-pdb
+          path: "${{ github.workspace }}/out/${{ matrix.configuration }}AMD64"
+      - name: Clean pdb
+        run: Get-ChildItem * -Include *.pdb,*.lib,*.map -Recurse | Remove-Item
+      - name: Upload artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: VirtualDub2-${{ matrix.configuration }}AMD64
+          path: "${{ github.workspace }}/out/${{ matrix.configuration }}AMD64"
+
