@@ -704,6 +704,7 @@ void tool_fxc(const vdfastvector<const char *>& args, const vdfastvector<const c
 	DWORD flags = D3DXSHADER_NO_PRESHADER;
 
 #ifdef D3DXSHADER_USE_LEGACY_D3DX9_31_DLL
+	printf("Flag use: D3DXSHADER_USE_LEGACY_D3DX9_31_DLL\n");
 	// The V32 compiler seems to be broken in that it thinks "point" and "linear" are
 	// keywords.
 	flags |= D3DXSHADER_USE_LEGACY_D3DX9_31_DLL;
@@ -712,7 +713,7 @@ void tool_fxc(const vdfastvector<const char *>& args, const vdfastvector<const c
 	HRESULT hr = D3DXCreateEffectFromFile(pDevice, filename, NULL, NULL, flags, NULL, ~pEffect, ~pErrors);
 
 	if (FAILED(hr)) {
-		printf("Effect compilation failed for \"%s\"\n", filename);
+		printf("Effect compilation failed for \"%s\" (0x%08x)\n", filename, hr);
 
 		if (pErrors)
 			puts((const char *)pErrors->GetBufferPointer());
