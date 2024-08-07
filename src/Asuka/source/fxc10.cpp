@@ -231,7 +231,7 @@ void tool_fxc10(const vdfastvector<const char *>& args, const vdfastvector<const
 				HRESULT hr = D3DCompile(buf.data(), len, filename, macros, &includeHandler, function_name.c_str(), compile_target.c_str(), 0, 0, ~shader, ~errors);
 
 				if (FAILED(hr)) {
-					printf("Effect compilation failed for \"%s\" with target %s (hr=%08x)\n", filename, compile_target.c_str(), hr);
+					printf("tool_fxc10(): Effect compilation failed for \"%s\" with target %s (hr=%08x)\n", filename, compile_target.c_str(), hr);
 
 					if (errors)
 						puts((const char *)errors->GetBufferPointer());
