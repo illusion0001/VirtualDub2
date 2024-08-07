@@ -108,7 +108,7 @@ void tool_psa(const vdfastvector<const char *>& args, const vdfastvector<const c
 				hr = D3DXAssembleShader(pstext.data(), pstext.size(), NULL, NULL, 0, ~pBuffer, ~pErrors);
 
 			if (FAILED(hr)) {
-				printf("Effect compilation failed for \"%s\"\n", filename);
+				printf("Effect compilation failed for \"%s\" (0x%08x)\n", filename, hr);
 
 				if (pErrors)
 					puts((const char *)pErrors->GetBufferPointer());
